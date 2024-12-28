@@ -12,4 +12,12 @@ model Player {
     dateCreated DateTime @default(now()) 
     name String
     score Int
+    room Room @relation(fields: [roomId], references: [id])
+    roomId String
+}
+
+model Room {
+    id String @id @default(uuid())
+    name String
+    players Player[]
 }

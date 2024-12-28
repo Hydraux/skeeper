@@ -1,10 +1,7 @@
-import prisma from "@/lib/prisma";
-import PlayersPage from "./_features/players/components/playersList";
+import RoomsList from "./_features/rooms/components/roomsList";
 
-export default async function HomePage(){
-    const players = await prisma.player.findMany();
-
+export default function RoomsPage(){
     return(
-        <PlayersPage players={players}/>
+        <RoomsList/>
     );
 }

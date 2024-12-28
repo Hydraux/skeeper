@@ -89,7 +89,7 @@ export default function PlayersPage({ players }: Props) {
     return (
         <>
             <AppShell.Header>
-                <AppHeader onCreate={handleCreate} />
+                <AppHeader title="Game 1" onCreate={handleCreate} />
             </AppShell.Header>
             <AppShell.Main>
                 <Stack gap={10}>

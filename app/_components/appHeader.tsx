@@ -6,10 +6,11 @@ import { useDisclosure } from "@mantine/hooks";
 import PlayerForm from "../_features/players/components/playerForm";
 
 interface Props {
+    title: string;
     onCreate: (formData: FormData) => void
 }
 
-export default function AppHeader({onCreate}: Props) {
+export default function AppHeader({title, onCreate}: Props) {
     const [opened, { open, close }] = useDisclosure(false);
 
     const handleSubmit = (formData: FormData) => {
@@ -20,7 +21,7 @@ export default function AppHeader({onCreate}: Props) {
     return (
         <>
         <Group justify="space-between" px={10}>
-            <Title>Game 1</Title>
+            <Title>{title}</Title>
             <ActionIcon onClick={open}><IconPlus /></ActionIcon>
         </Group>
         <Modal opened={opened} withCloseButton onClose={close} title="Create Player">
