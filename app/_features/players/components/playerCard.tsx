@@ -1,32 +1,29 @@
 "use client"
 
-import { ActionIcon, Button, Card, Group, Menu, Modal, Title } from "@mantine/core";
-import { IconPlus, IconMinus, IconDots , IconTrash } from "@tabler/icons-react";
-import { useDisclosure } from "@mantine/hooks";
-import ScoreCard from "./scoreCard";
+import { ActionIcon, Button, Card, Group, Menu, Modal, Text, Title } from "@mantine/core";
+import { IconPlus, IconMinus, IconDots, IconTrash } from "@tabler/icons-react";
+import { useDebouncedValue, useDisclosure } from "@mantine/hooks";
 import { Player } from "@prisma/client";
-import { useOptimistic, useTransition } from "react";
-import { DecrementScore, IncrementScore } from "../actions";
+import { useMemo, useState } from "react";
+import { IncrementScore } from "../actions";
 import { toast } from "react-toastify";
 import { socket } from "@/app/socket";
+import ScoreCard from "./scoreCard";
 
 interface Props {
     player: Player;
     onDelete: (player: Player) => void;
 }
 
-function PlayerCard({player, onDelete: handleDelete}: Props) {
-    const [_, startTransition] = useTransition(); // eslint-disable-line @typescript-eslint/no-unused-vars
+function PlayerCard({ player, onDelete: handleDelete }: Props) {
     const [opened, { open, close }] = useDisclosure(false);
-    const [optimisticPlayer, updateOptimisticPlayer] = useOptimistic(player, (state, newPlayer: Player)=>{
-        return newPlayer;
-    });
+    const [modifier, setModifier] = useState(0);
+    const [debouncedModifier] = useDebouncedValue(modifier, 500);
 
-    const handleIncrement = async (amount: number) => {
-       updateOptimisticPlayer({...optimisticPlayer, score: optimisticPlayer.score + amount});
+    const handleChange = async (amount: number) => {
         const result = await IncrementScore(player, amount);
 
-        if(result?.error){
+        if (result?.error) {
             toast.error(result.error);
             return;
         }
@@ -34,53 +31,62 @@ function PlayerCard({player, onDelete: handleDelete}: Props) {
         socket.emit("message", "Player modified");
     }
 
-    const handleDecrement = async (amount: number) => {
-       updateOptimisticPlayer({...optimisticPlayer, score: optimisticPlayer.score - amount});
-        const result = await DecrementScore(player, amount);
-
-        if(result?.error){
-            toast.error(result.error);
-            return;
-        }
-        socket.emit("message", "Player modified");
-    }
+   useMemo(async ()=>{
+        if(debouncedModifier === 0)
+           return;
+       await handleChange(debouncedModifier);
+        setModifier(0);
+   },[debouncedModifier]); 
 
 
+    const deltaScore = useMemo(() => {
+        let str = modifier.toString();
+        if (modifier >= 0)
+            str = "+ " + str;
+        return str;
+    }, [modifier]);
 
     return (
         <>
             <Card>
                 <Card.Section inheritPadding py={"sm"}>
                     <Group justify="space-between">
-                    <Title size={"lg"}>
-                        {optimisticPlayer.name}
-                    </Title>
-                    <Menu withinPortal>
-                        <Menu.Target>
-                            <ActionIcon variant="transparent" color="grey">
-                                <IconDots/>
-                            </ActionIcon>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                            <Menu.Item leftSection={<IconTrash/>} onClick={()=>handleDelete(player)}>
-                                Delete
-                            </Menu.Item>
-                        </Menu.Dropdown>
-                    </Menu>
+                        <Title size={"lg"}>
+                            {player.name}
+                        </Title>
+                        <Menu withinPortal>
+                            <Menu.Target>
+                                <ActionIcon variant="transparent" color="grey">
+                                    <IconDots />
+                                </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                                <Menu.Item leftSection={<IconTrash />} onClick={() => handleDelete(player)}>
+                                    Delete
+                                </Menu.Item>
+                            </Menu.Dropdown>
+                        </Menu>
                     </Group>
                 </Card.Section>
                 <Card.Section inheritPadding pb={"sm"}>
                     <Group justify="space-between">
-                        <ActionIcon onClick={() => startTransition(()=>handleDecrement(1))}><IconMinus /></ActionIcon>
+                        <ActionIcon onClick={() => setModifier(prev => prev - 1)}><IconMinus /></ActionIcon>
                         <Button variant="transparent" onClick={open}>
-                            <Title size={"xl"}>{optimisticPlayer.score}</Title>
+                            <Group gap={5}>
+                                <Title size={"xl"}>{player.score}</Title>
+                                {modifier !== 0 && <Text variant="gradient">{deltaScore}</Text>}
+                            </Group>
                         </Button>
-                        <ActionIcon onClick={() => startTransition(()=>handleIncrement(1))}><IconPlus /></ActionIcon>
+                        <ActionIcon onClick={() => setModifier(prev => prev + 1)}><IconPlus /></ActionIcon>
                     </Group>
                 </Card.Section>
             </Card>
-            <Modal opened={opened} withCloseButton onClose={close} title={"Edit " + optimisticPlayer.name + "'s Score"}>
-                <ScoreCard player={optimisticPlayer} onIncrement={amount => startTransition(()=>handleIncrement(amount))} onDecrement={amount => startTransition(()=> handleDecrement(amount))} />
+            <Modal opened={opened} withCloseButton onClose={close} title={"Edit " + player.name + "'s Score"}>
+        <ScoreCard player={player} onChange={(amount)=> {
+            handleChange(amount);
+            close();
+        }
+        }/>
             </Modal>
         </>
     );

@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CreatePlayer, OnMessage, RemovePlayer } from "../actions";
 import { toast } from "react-toastify";
 import { socket } from "@/app/socket";
-import { PlayersReducerAction} from "../types";
+import { PlayersReducerAction } from "../types";
 
 interface Props {
     players: Player[]
@@ -17,8 +17,9 @@ interface Props {
 
 export default function PlayersPage({ players }: Props) {
     const [_, startTransition] = useTransition(); // eslint-disable-line @typescript-eslint/no-unused-vars
+
     const [optimisticPlayers, modifyOptimisticPlayers] = useOptimistic(players, (state, action: PlayersReducerAction) => {
-        switch(action.type){
+        switch (action.type) {
             case "Add":
                 return [...state, action.payload]
             case "Remove":
@@ -63,7 +64,7 @@ export default function PlayersPage({ players }: Props) {
             name: name.toString(),
             score: 0,
         }
-        modifyOptimisticPlayers({type: "Add", payload: player});
+        modifyOptimisticPlayers({ type: "Add", payload: player });
         const result = await CreatePlayer(player);
 
         if (result?.error) {
@@ -75,7 +76,7 @@ export default function PlayersPage({ players }: Props) {
     }
 
     const handleDelete = async (player: Player) => {
-        modifyOptimisticPlayers({type: "Remove", payload: player});
+        modifyOptimisticPlayers({ type: "Remove", payload: player });
         const result = await RemovePlayer(player);
 
         if (result?.error) {
@@ -84,7 +85,7 @@ export default function PlayersPage({ players }: Props) {
         }
         socket.emit("message", "Player removed");
         return;
-    } 
+    }
 
     return (
         <>
@@ -94,7 +95,7 @@ export default function PlayersPage({ players }: Props) {
             <AppShell.Main>
                 <Stack gap={10}>
                     {optimisticPlayers.sort((a, b) => a.dateCreated.getTime() - b.dateCreated.getTime()).map(player =>
-                        <PlayerCard key={player.id} player={player} onDelete={player => startTransition(()=>handleDelete(player))}/>
+                        <PlayerCard key={player.id} player={player} onDelete={player => startTransition(() => handleDelete(player))} />
                     )}
                 </Stack>
             </AppShell.Main>
