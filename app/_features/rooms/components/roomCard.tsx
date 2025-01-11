@@ -1,19 +1,40 @@
 "use client"
 
-import { Button, Card, Group, Stack, Text, Title } from "@mantine/core";
+import { ActionIcon, Card, Group, Menu, Text, Title } from "@mantine/core";
+import { Room } from "@prisma/client";
+import { IconDots, IconTrash } from "@tabler/icons-react";
+import Link from "next/link";
 
-export default function RoomCard() {
-    return (
-        <Card>
-            <Card.Section inheritPadding pt={10} pb={10}>
-                <Group justify="space-between">
-                    <Stack gap={0}>
-                    <Title size={"lg"}>Game 1</Title>
-                    <Text>0/5</Text>
-                    </Stack>
-                    <Button>Join</Button>
-                </Group>
-            </Card.Section>
-        </Card>
-    );
+interface Props {
+  room: Room
+  onDelete: (room: Room) => void;
+}
+
+export default function RoomCard({ room, onDelete: handleDelete }: Props) {
+  return (
+    <Card component={Link} href={`/${room.id}`}>
+      <Card.Section inheritPadding py={"sm"}>
+        <Group justify="space-between">
+          <Title size={"lg"}>{room.name}</Title>
+          <Menu withinPortal>
+            <Menu.Target>
+              <ActionIcon variant="transparent" color="grey" onClick={e => e.preventDefault()}>
+                <IconDots />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<IconTrash />} onClick={e => { e.preventDefault(); handleDelete(room); }}>
+                Delete
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Card.Section>
+      <Card.Section inheritPadding pb={"sm"}>
+        <Group justify="space-between">
+          <Text>0/5</Text>
+        </Group>
+      </Card.Section>
+    </Card>
+  );
 }
