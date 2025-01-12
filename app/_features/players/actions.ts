@@ -24,6 +24,16 @@ export async function RemovePlayer(player: Player) {
   }
 }
 
+export async function ResetScore() {
+  try {
+    await prisma.player.updateMany({ data: { score: 0 } })
+  } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    return { error: error.message || "Failed to reset player scores" }
+  } finally {
+    revalidatePath("/");
+  }
+}
+
 export async function SetScore(playerId: string, score: number) {
   try {
     await prisma.player.update({ where: { id: playerId }, data: { score: score } })

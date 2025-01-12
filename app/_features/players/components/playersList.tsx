@@ -2,11 +2,11 @@
 
 import { Player } from "@prisma/client";
 import PlayerCard from "./playerCard";
-import { useEffect, useOptimistic, useTransition } from "react";
+import { useCallback, useEffect, useOptimistic, useTransition } from "react";
 import { AppShell, Modal, Stack } from "@mantine/core";
 import AppHeader from "@/app/_components/appHeader";
 import { v4 as uuidv4 } from 'uuid';
-import { CreatePlayer, OnMessage, RemovePlayer } from "../actions";
+import { CreatePlayer, OnMessage, RemovePlayer, ResetScore } from "../actions";
 import { toast } from "react-toastify";
 import { socket } from "@/app/socket";
 import { PlayersReducerAction } from "../types";
@@ -27,9 +27,14 @@ export default function PlayersPage({ players, roomId, roomName }: Props) {
   const [optimisticPlayers, modifyOptimisticPlayers] = useOptimistic(players, (state, action: PlayersReducerAction) => {
     switch (action.type) {
       case "Add":
-        return [...state, action.payload]
+        return action.payload ? [...state, action.payload] : state;
+      case "Reset":
+        return state.map(player => {
+          player.score = 0;
+          return player;
+        });
       case "Remove":
-        return state.filter(player => player.id !== action.payload.id)
+        return action.payload ? state.filter(player => player.id !== action.payload?.id) : state;
       default:
         return state;
     }
@@ -95,10 +100,23 @@ export default function PlayersPage({ players, roomId, roomName }: Props) {
     return;
   }
 
+  const handleReset = useCallback(async () => {
+    modifyOptimisticPlayers({ type: "Reset" });
+    const result = await ResetScore();
+
+    if (result?.error) {
+      toast.error(result.error);
+      return;
+    }
+    socket.emit("message", "Player modified");
+    return;
+
+  }, [modifyOptimisticPlayers]);
+
   return (
     <>
       <AppShell.Header>
-        <AppHeader title={roomName} open={open} withBackButton qrCodeURL={`http://hydraux-homelab.com:3000/${roomId}`} />
+        <AppHeader title={roomName} open={open} withBackButton withResetButton onReset={() => startTransition(() => handleReset())} qrCodeURL={`http://hydraux-homelab.com:3000/${roomId}`} />
         <Modal opened={opened} withCloseButton onClose={close} title="Create Player">
           <PlayerForm onSubmit={handleCreate} />
         </Modal>
