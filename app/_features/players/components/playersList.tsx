@@ -98,7 +98,7 @@ export default function PlayersPage({ players, roomId, roomName }: Props) {
   return (
     <>
       <AppShell.Header>
-        <AppHeader title={roomName} open={open} withBackButton />
+        <AppHeader title={roomName} open={open} withBackButton qrCodeURL={`http://hydraux-homelab.com:3000/${roomId}`} />
         <Modal opened={opened} withCloseButton onClose={close} title="Create Player">
           <PlayerForm onSubmit={handleCreate} />
         </Modal>
